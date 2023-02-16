@@ -7,7 +7,7 @@ then
   exit 1
 fi
 
-if ! [ -x "$(command -v cargo sqlx)" ]
+if ! [ -x "$(command -v sqlx)" ]
 then
   echo "Error: sqlx is not installed."
   echo "Use:"
