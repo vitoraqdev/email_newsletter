@@ -35,10 +35,10 @@ runs:
         key: ${{ runner.os }}-sqlx-${{ env.SQLX_VERSION }}
 
     - name: Install sqlx-cli
-      run: |
-        cargo install sqlx-cli >
-        --version=${{ env.SQLX_VERSION }} >
-        --features ${{ env.SQLX_FEATURES }} >
+      run: >
+        cargo install sqlx-cli
+        --version=${{ env.SQLX_VERSION }}
+        --features ${{ env.SQLX_FEATURES }}
         --no-default-features
         --locked
       shell: bash
