@@ -57,6 +57,6 @@ runs:
       run: |
         sudo apt-get install libpq-dev -y
         echo $PATH
-        command -v sqlx
+        echo $(command -v sqlx)
         SKIP_DOCKER=true sudo bash ./scripts/init_db.sh
       shell: bash
