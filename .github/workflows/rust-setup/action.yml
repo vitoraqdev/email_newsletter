@@ -49,3 +49,4 @@ runs:
       run: |
         sudo apt-get install libpq-dev -y
         SKIP_DOCKER=true ./scripts/init_db.sh
+      shell: bash
