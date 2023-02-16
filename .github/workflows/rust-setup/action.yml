@@ -1,16 +1,12 @@
 name: "Rust setup"
 description: "Runs base setup for Database and dependencies"
 
-env:
-  
 runs:
   using: composite
   env:
     SQLX_VERSION: 0.6.2
     SQLX_FEATURES: "rustls,postgres"
   steps:
-    - name: Checkout repository
-      uses: actions/checkout@v2
     - name: Cache dependencies
       id: cache-dependencies
       uses: actions/cache@v2
