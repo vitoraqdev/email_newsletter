@@ -1,10 +1,6 @@
 #!/usr/bin/env bash
 set -eox pipefail
 
-echo "PATH before appending: $PATH"
-export PATH="${PATH:+${PATH}:}~${CARGO_PATH}"
-echo "PATH after appending: $PATH"
-
 if ! [ -x "$(command -v psql)" ]
 then
   echo "Error: psql is not installed."
