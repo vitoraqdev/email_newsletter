@@ -48,9 +48,10 @@ jobs:
         ports:
           - 5432:5432
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
       - name: Rust setup
         uses: ./.github/workflows/rust-setup
-      - uses: actions/checkout@v2
       - name: Install rustfmt from toolchain
         uses: actions-rs/toolchain@v1
         with:
@@ -75,9 +76,10 @@ jobs:
         ports:
           - 5432:5432
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
       - name: Rust setup
-        uses: ./.github/workflows/rust-setup@master
-      - uses: actions/checkout@v2
+        uses: ./.github/workflows/rust-setup
       - name: Install clippy from toolchain
         uses: actions-rs/toolchain@v1
         with:
@@ -90,11 +92,11 @@ jobs:
           args: -- -D warnings
 
   coverage:
-    name:                       coverage
-    runs-on:                    ubuntu-latest
+    name: coverage
+    runs-on: ubuntu-latest
     container:
-      image:                    xd009642/tarpaulin:develop-nightly
-      options:                  --security-opt seccomp=unconfined
+      image: xd009642/tarpaulin:develop-nightly
+      options: --security-opt seccomp=unconfined
     services:
       postgres:
         image: postgres:12
@@ -105,11 +107,10 @@ jobs:
         ports:
           - 5432:5432
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
       - name: Rust setup
         uses: ./.github/workflows/rust-setup
-      - name:                   Checkout repository
-        uses:                   actions/checkout@v2
-
-      - name:                   Generate code coverage
+      - name: Generate code coverage
         run: |
           cargo +nightly tarpaulin --verbose --all-features --workspace --timeout 120 --out Xml
