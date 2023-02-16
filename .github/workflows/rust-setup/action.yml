@@ -1,13 +1,12 @@
 name: "Rust setup"
 description: "Runs base setup for Database and dependencies"
 
-
+env:
+  SQLX_VERSION: 0.6.2
+  SQLX_FEATURES: "rustls,postgres"
 
 runs:
   using: composite
-  env:
-    SQLX_VERSION: 0.6.2
-    SQLX_FEATURES: "rustls,postgres"
   steps:
     - name: Cache dependencies
       id: cache-dependencies
@@ -41,8 +40,8 @@ runs:
         args: >
           sqlx-cli
           --force
-          --version=${{ env.SQLX_VERSION }}
-          --features ${{ env.SQLX_FEATURES }}
+          --version=${{ SQLX_VERSION }}
+          --features ${{ SQLX_FEATURES }}
           --no-default-features
           --locked
     - name: Migrate database
