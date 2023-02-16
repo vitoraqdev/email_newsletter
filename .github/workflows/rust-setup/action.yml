@@ -56,6 +56,6 @@ runs:
     - name: Migrate database
       run: |
         sudo apt-get install libpq-dev -y
-        echo sqlx path: $(command -v sqlx)
+        echo sqlx path: $(command -v cargo sqlx)
         SKIP_DOCKER=true sudo bash ./scripts/init_db.sh
       shell: bash
