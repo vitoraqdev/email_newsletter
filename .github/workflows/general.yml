@@ -9,7 +9,18 @@ jobs:
   test:
     name: Test
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:12
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
     steps:
+      - name: Rust setup
+        uses: ./.github/workflows/rust-setup
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
         with:
@@ -23,7 +34,18 @@ jobs:
   fmt:
     name: Rustfmt
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:12
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
     steps:
+      - name: Rust setup
+        uses: ./.github/workflows/rust-setup
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
         with:
@@ -38,7 +60,18 @@ jobs:
   clippy:
     name: Clippy
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:12
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
     steps:
+      - name: Rust setup
+        uses: ./.github/workflows/rust-setup
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
         with:
@@ -56,7 +89,18 @@ jobs:
     container:
       image:                    xd009642/tarpaulin:develop-nightly
       options:                  --security-opt seccomp=unconfined
+    services:
+      postgres:
+        image: postgres:12
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
     steps:
+      - name: Rust setup
+        uses: ./.github/workflows/rust-setup
       - name:                   Checkout repository
         uses:                   actions/checkout@v2
 
