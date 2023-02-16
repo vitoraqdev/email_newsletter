@@ -8,7 +8,8 @@ env:
 runs:
   using: composite
   steps:
-    - run: env
+    - name: Check environment variables
+      run: env
       shell: bash
     - name: Cache dependencies
       id: cache-dependencies
@@ -42,8 +43,8 @@ runs:
         args: >
           sqlx-cli
           --force
-          --version=${{ SQLX_VERSION }}
-          --features ${{ SQLX_FEATURES }}
+          --version= 
+          --features 
           --no-default-features
           --locked
     - name: Migrate database
