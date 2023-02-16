@@ -57,5 +57,5 @@ runs:
       run: |
         sudo apt-get install libpq-dev -y
         echo sqlx path: $(command -pv cargo sqlx)
-        SKIP_DOCKER=true sudo bash ./scripts/init_db.sh
+        SKIP_DOCKER=true CARGO_PATH=${{ PATH }} sudo bash ./scripts/init_db.sh
       shell: bash
