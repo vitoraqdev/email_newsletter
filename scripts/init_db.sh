@@ -1,13 +1,15 @@
 #!/usr/bin/env bash
 set -eox pipefail
 
+echo $PATH
+
 if ! [ -x "$(command -v psql)" ]
 then
   echo "Error: psql is not installed."
   exit 1
 fi
 
-if ! [ -x "$(command -v sqlx)" ]
+if ! [ -x "$(command -v cargo sqlx)" ]
 then
   echo "Error: sqlx is not installed."
   echo "Use:"
