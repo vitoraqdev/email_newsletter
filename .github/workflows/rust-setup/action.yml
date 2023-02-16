@@ -7,6 +7,9 @@ runs:
     - name: Check environment variables
       run: env
       shell: bash
+    - name: Check PATH variable
+      run: echo $PATH
+      shell: bash
     - name: Cache dependencies
       id: cache-dependencies
       uses: actions/cache@v2
@@ -45,5 +48,6 @@ runs:
     - name: Migrate database
       run: |
         sudo apt-get install libpq-dev -y
+        echo $PATH
         SKIP_DOCKER=true sudo bash ./scripts/init_db.sh
       shell: bash
