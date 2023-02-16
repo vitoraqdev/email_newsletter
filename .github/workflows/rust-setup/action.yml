@@ -8,6 +8,8 @@ env:
 runs:
   using: composite
   steps:
+    - run: env
+      shell: bash
     - name: Cache dependencies
       id: cache-dependencies
       uses: actions/cache@v2
