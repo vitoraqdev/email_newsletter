@@ -20,7 +20,7 @@ jobs:
           - 5432:5432
     steps:
       - name: Rust setup
-        uses: ./.github/workflows/action.yml
+        uses: ./.github/workflows/rust-setup
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
         with:
