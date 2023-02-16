@@ -45,6 +45,6 @@ runs:
           --locked
     - name: Migrate database
       run: |
-        apt-get install libpq-dev -y
+        sudo apt-get install libpq-dev -y
         SKIP_DOCKER=true ./scripts/init_db.sh
       shell: bash
