@@ -34,17 +34,25 @@ runs:
           ~/.cargo/bin/sqlx
         key: ${{ runner.os }}-sqlx-${{ env.SQLX_VERSION }}
 
-    - name: Install sqlx-cli 
-      uses: actions-rs/cargo@v1
-      if: steps.cache-sqlx.outputs.cache-hit == false
-      with:
-        command: install 
-        args: >
-          sqlx-cli
-          --version=${{ env.SQLX_VERSION }}
-          --features ${{ env.SQLX_FEATURES }}
-          --no-default-features
-          --locked
+    - name: Install sqlx-cli
+      run: |
+        cargo install sqlx-cli >
+        --version=${{ env.SQLX_VERSION }} >
+        --features ${{ env.SQLX_FEATURES }} >
+        --no-default-features
+        --locked
+      shell: bash
+
+#      uses: actions-rs/cargo@v1
+#      if: steps.cache-sqlx.outputs.cache-hit == false
+#      with:
+#        command: install
+#        args: >
+#          sqlx-cli
+#          --version=${{ env.SQLX_VERSION }}
+#          --features ${{ env.SQLX_FEATURES }}
+#          --no-default-features
+#          --locked
     - name: Migrate database
       run: |
         sudo apt-get install libpq-dev -y
