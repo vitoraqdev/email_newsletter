@@ -1,8 +1,34 @@
 use email_newsletter::configuration::{DatabaseSettings, Settings};
 use email_newsletter::startup::run;
+use email_newsletter::telemetry::set_subscriber;
+use once_cell::sync::Lazy;
+use secrecy::ExposeSecret;
 use sqlx::{Connection, Executor, PgConnection, PgPool};
 use std::net::TcpListener;
 use uuid::Uuid;
+
+static TRACING: Lazy<()> = Lazy::new(|| {
+    let subscriber_name = "test".into();
+    let default_filter_level = "info".into();
+    match std::env::var("TEST_LOG").is_ok() {
+        true => {
+            let subscriber = email_newsletter::telemetry::get_subscriber(
+                subscriber_name,
+                default_filter_level,
+                std::io::stdout,
+            );
+            set_subscriber(subscriber);
+        }
+        false => {
+            let subscriber = email_newsletter::telemetry::get_subscriber(
+                subscriber_name,
+                default_filter_level,
+                std::io::sink,
+            );
+            set_subscriber(subscriber);
+        }
+    };
+});
 
 pub struct TestApp {
     pub address: String,
@@ -11,12 +37,15 @@ pub struct TestApp {
 
 // Launch the application in the background
 async fn spawn_app() -> TestApp {
+    Lazy::force(&TRACING);
     let mut configuration = Settings::default();
     configuration.database.database_name = Uuid::new_v4().to_string();
     let connection_pool = configure_database(configuration.database).await;
+
     let listener = TcpListener::bind("127.0.0.1:0").expect("Failed to bind random port.");
     let port = listener.local_addr().unwrap().port();
-    let address = format!("http://127.0.0.1:{}", port);
+    let address = format!("http://127.0.0.1:{port}");
+
     let server = run(listener, connection_pool.clone()).expect("Failed to bind address.");
     let _ = tokio::spawn(server);
 
@@ -28,9 +57,10 @@ async fn spawn_app() -> TestApp {
 
 async fn configure_database(config: DatabaseSettings) -> PgPool {
     // create database
-    let mut connection = PgConnection::connect(&config.connection_string_without_db())
-        .await
-        .expect("Could not connect to Postgres.");
+    let mut connection =
+        PgConnection::connect(config.connection_string_without_db().expose_secret())
+            .await
+            .expect("Could not connect to Postgres.");
 
     connection
         .execute(format!(r#"CREATE DATABASE "{}";"#, config.database_name).as_str())
@@ -38,7 +68,7 @@ async fn configure_database(config: DatabaseSettings) -> PgPool {
         .expect("Failed to create database");
 
     // migrate
-    let connection_pool = PgPool::connect(&config.connection_string())
+    let connection_pool = PgPool::connect(config.connection_string().expose_secret())
         .await
         .expect("Could not connect to Postgres.");
 
@@ -47,7 +77,7 @@ async fn configure_database(config: DatabaseSettings) -> PgPool {
         .await
         .expect("Failed to migrate database.");
 
-    PgPool::connect(&config.connection_string())
+    PgPool::connect(config.connection_string().expose_secret())
         .await
         .expect("Failed to connect to Postgres.")
 }
