@@ -1,10 +1,9 @@
-use config::File;
 use secrecy::{ExposeSecret, Secret};
 
 #[derive(serde::Deserialize)]
 pub struct Settings {
     pub database: DatabaseSettings,
-    pub application_port: u16,
+    pub application: ApplicationSettings,
 }
 
 #[derive(serde::Deserialize)]
@@ -16,15 +15,64 @@ pub struct DatabaseSettings {
     pub database_name: String,
 }
 
-impl Default for Settings {
-    fn default() -> Self {
-        config::Config::builder()
-            .add_source(File::with_name("configuration"))
-            .build()
-            .expect("Failed to get configuration file.")
-            .try_deserialize::<Settings>()
-            .expect("Failed to parse config::Config into crate::configuration::Settings.")
+#[derive(serde::Deserialize)]
+pub struct ApplicationSettings {
+    pub host: String,
+    pub port: u16,
+}
+
+pub enum Environment {
+    Local,
+    Production,
+}
+
+impl Environment {
+    fn as_str(&self) -> &str {
+        match self {
+            Environment::Local => "local",
+            Environment::Production => "production",
+        }
     }
+}
+
+impl TryFrom<String> for Environment {
+    type Error = String;
+
+    fn try_from(s: String) -> Result<Self, Self::Error> {
+        match s.to_lowercase().as_str() {
+            "local" => Ok(Environment::Local),
+            "production" => Ok(Environment::Production),
+            other => Err(format!(
+                "{} is not a supported environment. Use either `local` or `production`.",
+                other
+            )),
+        }
+    }
+}
+
+pub fn get_configuration() -> Result<Settings, config::ConfigError> {
+    let base_path = std::env::current_dir().expect("Failed to determine current directory.");
+    let configuration_directory = base_path.join("configuration");
+
+    // Check environment variable "APP_ENVIRONMENT"
+    let environment: Environment = std::env::var("APP_ENVIRONMENT")
+        // If not set, then default as local
+        .unwrap_or_else(|_| "local".into())
+        .try_into()
+        // If mistyped, panic
+        .expect("Failed to parse APP_ENVIRONMENT.");
+
+    // Check base.yaml then
+    // If environment is local, then check local.yaml, if production, then check production.yaml
+    let settings = config::Config::builder()
+        .add_source(config::File::from(configuration_directory.join("base")))
+        .add_source(config::File::from(
+            configuration_directory.join(environment.as_str()),
+        ))
+        .build()
+        .expect("Failed to load configuration files.");
+
+    settings.try_deserialize()
 }
 
 impl DatabaseSettings {

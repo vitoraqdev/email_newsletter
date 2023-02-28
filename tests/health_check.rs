@@ -1,4 +1,4 @@
-use email_newsletter::configuration::{DatabaseSettings, Settings};
+use email_newsletter::configuration::{get_configuration, DatabaseSettings};
 use email_newsletter::startup::run;
 use email_newsletter::telemetry::set_subscriber;
 use once_cell::sync::Lazy;
@@ -38,7 +38,7 @@ pub struct TestApp {
 // Launch the application in the background
 async fn spawn_app() -> TestApp {
     Lazy::force(&TRACING);
-    let mut configuration = Settings::default();
+    let mut configuration = get_configuration().expect("Failed to get configuration.");
     configuration.database.database_name = Uuid::new_v4().to_string();
     let connection_pool = configure_database(configuration.database).await;
 
@@ -47,7 +47,7 @@ async fn spawn_app() -> TestApp {
     let address = format!("http://127.0.0.1:{port}");
 
     let server = run(listener, connection_pool.clone()).expect("Failed to bind address.");
-    let _ = tokio::spawn(server);
+    tokio::spawn(server);
 
     TestApp {
         address,
@@ -82,25 +82,22 @@ async fn configure_database(config: DatabaseSettings) -> PgPool {
         .expect("Failed to connect to Postgres.")
 }
 
-#[tokio::test]
+#[actix_web::test]
 async fn health_check_works() {
     // Arrange
     let test_app = spawn_app().await;
-    let client = reqwest::Client::new();
 
     // Act
-    let response = client
-        .get(format!("{}/health_check", test_app.address))
-        .send()
+    let response = reqwest::get(format!("{}/health_check", test_app.address))
         .await
-        .expect("Failed to execute request.");
+        .unwrap();
 
     // Assert
     assert!(response.status().is_success());
-    assert_eq!(Some(0), response.content_length());
+    assert_eq!(response.content_length(), Some(0));
 }
 
-#[tokio::test]
+#[actix_web::test]
 async fn subscribe_returns_a_200_for_valid_form_data() {
     // Arrange
     let test_app = spawn_app().await;
@@ -129,7 +126,7 @@ async fn subscribe_returns_a_200_for_valid_form_data() {
     assert_eq!(saved.name, "le guin");
 }
 
-#[tokio::test]
+#[actix_web::test]
 async fn subscribe_returns_a_400_when_data_is_missing() {
     // Arrange
     let test_app = spawn_app().await;
