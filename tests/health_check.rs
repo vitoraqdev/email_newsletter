@@ -2,7 +2,6 @@ use email_newsletter::configuration::{get_configuration, DatabaseSettings};
 use email_newsletter::startup::run;
 use email_newsletter::telemetry::set_subscriber;
 use once_cell::sync::Lazy;
-use secrecy::ExposeSecret;
 use sqlx::{Connection, Executor, PgConnection, PgPool};
 use std::net::TcpListener;
 use uuid::Uuid;
@@ -40,11 +39,19 @@ async fn spawn_app() -> TestApp {
     Lazy::force(&TRACING);
     let mut configuration = get_configuration().expect("Failed to get configuration.");
     configuration.database.database_name = Uuid::new_v4().to_string();
+    tracing::info!(
+        "Postgres URL: {:?}",
+        configuration.database.with_db()
+    );
     let connection_pool = configure_database(configuration.database).await;
 
     let listener = TcpListener::bind("127.0.0.1:0").expect("Failed to bind random port.");
     let port = listener.local_addr().unwrap().port();
-    let address = format!("http://127.0.0.1:{port}");
+    let address = format!(
+        "http://{}:{}",
+        configuration.application.host, port
+    );
+    tracing::info!("Running server on: http://{}", address);
 
     let server = run(listener, connection_pool.clone()).expect("Failed to bind address.");
     tokio::spawn(server);
@@ -58,7 +65,7 @@ async fn spawn_app() -> TestApp {
 async fn configure_database(config: DatabaseSettings) -> PgPool {
     // create database
     let mut connection =
-        PgConnection::connect(config.connection_string_without_db().expose_secret())
+        PgConnection::connect_with(&config.without_db())
             .await
             .expect("Could not connect to Postgres.");
 
@@ -68,7 +75,7 @@ async fn configure_database(config: DatabaseSettings) -> PgPool {
         .expect("Failed to create database");
 
     // migrate
-    let connection_pool = PgPool::connect(config.connection_string().expose_secret())
+    let connection_pool = PgPool::connect_with(config.with_db())
         .await
         .expect("Could not connect to Postgres.");
 
@@ -77,9 +84,7 @@ async fn configure_database(config: DatabaseSettings) -> PgPool {
         .await
         .expect("Failed to migrate database.");
 
-    PgPool::connect(config.connection_string().expose_secret())
-        .await
-        .expect("Failed to connect to Postgres.")
+    connection_pool
 }
 
 #[actix_web::test]
