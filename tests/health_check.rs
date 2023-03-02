@@ -39,18 +39,12 @@ async fn spawn_app() -> TestApp {
     Lazy::force(&TRACING);
     let mut configuration = get_configuration().expect("Failed to get configuration.");
     configuration.database.database_name = Uuid::new_v4().to_string();
-    tracing::info!(
-        "Postgres URL: {:?}",
-        configuration.database.with_db()
-    );
+    tracing::info!("Postgres URL: {:?}", configuration.database.with_db());
     let connection_pool = configure_database(configuration.database).await;
 
     let listener = TcpListener::bind("127.0.0.1:0").expect("Failed to bind random port.");
     let port = listener.local_addr().unwrap().port();
-    let address = format!(
-        "http://{}:{}",
-        configuration.application.host, port
-    );
+    let address = format!("http://{}:{}", configuration.application.host, port);
     tracing::info!("Running server on: http://{}", address);
 
     let server = run(listener, connection_pool.clone()).expect("Failed to bind address.");
@@ -64,10 +58,9 @@ async fn spawn_app() -> TestApp {
 
 async fn configure_database(config: DatabaseSettings) -> PgPool {
     // create database
-    let mut connection =
-        PgConnection::connect_with(&config.without_db())
-            .await
-            .expect("Could not connect to Postgres.");
+    let mut connection = PgConnection::connect_with(&config.without_db())
+        .await
+        .expect("Could not connect to Postgres.");
 
     connection
         .execute(format!(r#"CREATE DATABASE "{}";"#, config.database_name).as_str())
@@ -139,6 +132,35 @@ async fn subscribe_returns_a_400_when_data_is_missing() {
         ("name=le%20guin", "missing the email"),
         ("email=ursula_le_guin%40gmail.com", "missing the name"),
         ("", "missing both name and email"),
+    ];
+
+    for (invalid_body, error_message) in test_cases {
+        // Act
+        let response = reqwest::Client::new()
+            .post(format!("{}/subscriptions", test_app.address))
+            .header("Content-Type", "application/x-www-form-urlencoded")
+            .body(invalid_body)
+            .send()
+            .await
+            .expect("Failed to execute request.");
+
+        // Assert
+        assert_eq!(
+            400,
+            response.status().as_u16(),
+            "The API did not fail with 400 Bad Request when the payload was {error_message}.",
+        );
+    }
+}
+
+#[actix_web::test]
+async fn subscribe_returns_a_400_when_fields_are_present_but_invalid() {
+    // Arrange
+    let test_app = spawn_app().await;
+    let test_cases = vec![
+        ("name=&email=ursula_le_guin%40gmail.com", "empty name"),
+        ("name=Ursula&email=", "empty email"),
+        ("name=Ursula&email=definitely-not-an-email", "invalid email"),
     ];
 
     for (invalid_body, error_message) in test_cases {

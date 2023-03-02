@@ -76,9 +76,11 @@ pub fn get_configuration() -> Result<Settings, config::ConfigError> {
             configuration_directory.join(environment.as_str()),
         ))
         // Override with environment variables
-        .add_source(config::Environment::with_prefix("APP")
-            .prefix_separator("_")
-            .separator("__"))
+        .add_source(
+            config::Environment::with_prefix("APP")
+                .prefix_separator("_")
+                .separator("__"),
+        )
         .build()
         .expect("Failed to load configuration files.");
 

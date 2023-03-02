@@ -1,3 +1,4 @@
+use crate::domain::{NewSubscriber, SubscriberEmail, SubscriberName};
 use actix_web::web::Form;
 use actix_web::{web, HttpResponse};
 use chrono::Utc;
@@ -11,6 +12,19 @@ pub struct FormData {
     name: String,
 }
 
+impl TryFrom<FormData> for NewSubscriber {
+    type Error = String;
+
+    fn try_from(form: FormData) -> Result<Self, Self::Error> {
+        let subscriber_email = SubscriberEmail::parse(form.email)?;
+        let subscriber_name = SubscriberName::parse(form.name)?;
+        Ok(NewSubscriber {
+            email: subscriber_email,
+            name: subscriber_name,
+        })
+    }
+}
+
 #[tracing::instrument(
     name = "Adding a new subscriber",
     skip(form, pool),
@@ -20,23 +34,34 @@ pub struct FormData {
     )
 )]
 pub async fn subscribe(form: Form<FormData>, pool: web::Data<PgPool>) -> HttpResponse {
-    let result = insert_subscriber(&form, &pool);
+    let new_subscriber = match form.into_inner().try_into() {
+        Ok(new_subscriber) => new_subscriber,
+        Err(_) => return HttpResponse::BadRequest().finish(),
+    };
+
+    let result = insert_subscriber(&new_subscriber, &pool);
     match result.await {
         Ok(_) => HttpResponse::Ok().finish(),
         Err(_) => HttpResponse::InternalServerError().finish(),
     }
 }
 
-#[tracing::instrument(name = "Saving new subscription in the database", skip(form, pool))]
-pub async fn insert_subscriber(form: &Form<FormData>, pool: &PgPool) -> Result<(), sqlx::Error> {
+#[tracing::instrument(
+    name = "Saving new subscription in the database",
+    skip(new_subscriber, pool)
+)]
+pub async fn insert_subscriber(
+    new_subscriber: &NewSubscriber,
+    pool: &PgPool,
+) -> Result<(), sqlx::Error> {
     sqlx::query!(
         r#"
         INSERT INTO subscriptions (id, email, name, subscribed_at)
         VALUES ($1, $2, $3, $4)
         "#,
         Uuid::new_v4(),
-        form.email,
-        form.name,
+        new_subscriber.email.as_ref(),
+        new_subscriber.name.as_ref(),
         Utc::now()
     )
     .execute(pool)
