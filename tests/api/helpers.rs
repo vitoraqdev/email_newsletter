@@ -2,6 +2,7 @@ use email_newsletter::configuration::{get_configuration, DatabaseSettings};
 use email_newsletter::startup::{get_connection_pool, Application};
 use email_newsletter::telemetry::set_subscriber;
 use once_cell::sync::Lazy;
+use reqwest::Response;
 use sqlx::{Connection, Executor, PgConnection, PgPool};
 use uuid::Uuid;
 
@@ -31,6 +32,18 @@ static TRACING: Lazy<()> = Lazy::new(|| {
 pub struct TestApp {
     pub address: String,
     pub db_pool: PgPool,
+}
+
+impl TestApp {
+    pub async fn post_subscriptions(&self, body: String) -> Response {
+        reqwest::Client::new()
+            .post(format!("{}/subscriptions", self.address))
+            .header("Content-Type", "application/x-www-form-urlencoded")
+            .body(body)
+            .send()
+            .await
+            .expect("Failed to execute request.")
+    }
 }
 
 // Launch the application in the background
