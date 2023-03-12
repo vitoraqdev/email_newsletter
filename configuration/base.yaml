@@ -6,3 +6,8 @@ database:
   username: "postgres"
   password: "postgres"
   database_name: "newsletter"
+email_client:
+  base_url: "https://api.sparkpost.com/api/v1"
+  sender_email: "test@gmail.com"
+  authorization_token: "my-secret-token"
+  timeout_milliseconds: 10000
